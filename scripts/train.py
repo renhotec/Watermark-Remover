@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.models import vgg19
-from torch.cuda.amp import autocast, GradScaler
+# from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from scripts.dataset import WatermarkDataset
 from scripts.model import EnhancedGenerator, Discriminator
 import cv2
@@ -87,18 +88,39 @@ def train_model(epochs=100, dir=""):
     laplacian_loss_fn = LaplacianLoss().to(device)
     color_loss_fn = ColorConsistencyLoss().to(device)
 
-    scaler = GradScaler()
+    scaler = GradScaler(device=device.type)
     total_start_time = time.time()
+
+    import keyboard  # Add this import at the top of the file
+
+    paused = False
+
+    def toggle_pause():
+        nonlocal paused
+        paused = not paused
+        if paused:
+            print("Training paused. Press 'ctrl+alt+shift+o' to continue.")
+        else:
+            print("Training resumed.")
+
+    keyboard.add_hotkey('ctrl+alt+shift+p', toggle_pause)
+    keyboard.add_hotkey('ctrl+alt+shift+o', toggle_pause)
 
     for epoch in range(epochs):
         epoch_start_time = time.time()
 
+        while paused:
+            time.sleep(1)
+
         for batch_idx, (watermarked_images, clean_images) in enumerate(dataloader):
+            while paused:
+                time.sleep(1)
+
             watermarked_images, clean_images = watermarked_images.to(device), clean_images.to(device)
 
             # 训练判别器
             d_optimizer.zero_grad()
-            with autocast():
+            with autocast(device_type=device.type):
                 real_outputs = discriminator(watermarked_images, clean_images)
                 fake_clean_images = generator(watermarked_images)
                 fake_outputs = discriminator(watermarked_images, fake_clean_images.detach())
@@ -113,7 +135,7 @@ def train_model(epochs=100, dir=""):
 
             # 训练生成器
             g_optimizer.zero_grad()
-            with autocast():
+            with autocast(device_type=device.type):
                 fake_clean_images = generator(watermarked_images)
                 fake_outputs = discriminator(watermarked_images, fake_clean_images)
 

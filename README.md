@@ -1,30 +1,30 @@
 # **Watermark Removal Project**
 
-## **Ä£ĞÍË®Ó¡ÒÆ³ıÏîÄ¿**
+## **æ¨¡å‹æ°´å°ç§»é™¤é¡¹ç›®**
 
 ---
 
-### **Project Overview | ÏîÄ¿¸ÅÊö**
+### **Project Overview | é¡¹ç›®æ¦‚è¿°**
 This project focuses on removing watermarks from images using advanced deep learning techniques. It employs a Generative Adversarial Network (GAN) architecture with residual blocks, attention mechanisms, and perceptual loss to produce clean and high-quality outputs.
 
-´ËÏîÄ¿»ùÓÚÉî¶ÈÑ§Ï°¼¼ÊõÊµÏÖÍ¼ÏñË®Ó¡ÒÆ³ı£¬²ÉÓÃÉú³É¶Ô¿¹ÍøÂç (GAN) ¼Ü¹¹£¬½áºÏ²Ğ²î¿é¡¢×¢ÒâÁ¦»úÖÆÒÔ¼°¸ĞÖªËğÊ§£¬Éú³ÉÇåÎúÇÒ¸ßÖÊÁ¿µÄÍ¼ÏñÊä³ö¡£
+æ­¤é¡¹ç›®åŸºäºæ·±åº¦å­¦ä¹ æŠ€æœ¯å®ç°å›¾åƒæ°´å°ç§»é™¤ï¼Œé‡‡ç”¨ç”Ÿæˆå¯¹æŠ—ç½‘ç»œ (GAN) æ¶æ„ï¼Œç»“åˆæ®‹å·®å—ã€æ³¨æ„åŠ›æœºåˆ¶ä»¥åŠæ„ŸçŸ¥æŸå¤±ï¼Œç”Ÿæˆæ¸…æ™°ä¸”é«˜è´¨é‡çš„å›¾åƒè¾“å‡ºã€‚
 
 ---
 
-### **Features | ÌØµã**
+### **Features | ç‰¹ç‚¹**
 
 - **State-of-the-Art GAN Architecture**: Combines residual blocks, transformer blocks, and attention mechanisms.
-  **ÏÈ½øGAN¼Ü¹¹**£º½áºÏ²Ğ²î¿é¡¢Transformer¿éºÍ×¢ÒâÁ¦»úÖÆ¡£
+  **å…ˆè¿›GANæ¶æ„**ï¼šç»“åˆæ®‹å·®å—ã€Transformerå—å’Œæ³¨æ„åŠ›æœºåˆ¶ã€‚
 - **Comprehensive Loss Functions**: Includes adversarial loss, perceptual loss, edge-preserving loss, and laplacian loss.
-  **È«ÃæËğÊ§º¯Êı**£º°üÀ¨¶Ô¿¹ËğÊ§¡¢¸ĞÖªËğÊ§¡¢±ßÔµ±£»¤ËğÊ§ºÍÀ­ÆÕÀ­Ë¹ËğÊ§¡£
+  **å…¨é¢æŸå¤±å‡½æ•°**ï¼šåŒ…æ‹¬å¯¹æŠ—æŸå¤±ã€æ„ŸçŸ¥æŸå¤±ã€è¾¹ç¼˜ä¿æŠ¤æŸå¤±å’Œæ‹‰æ™®æ‹‰æ–¯æŸå¤±ã€‚
 - **FastAPI Integration**: Provides an API for image processing via URLs or Base64 input.
-  **¼¯³ÉFastAPI**£ºÖ§³ÖÍ¨¹ıURL»òBase64ÊäÈë½øĞĞÍ¼Ïñ´¦ÀíµÄAPI¡£
+  **é›†æˆFastAPI**ï¼šæ”¯æŒé€šè¿‡URLæˆ–Base64è¾“å…¥è¿›è¡Œå›¾åƒå¤„ç†çš„APIã€‚
 - **Batch Processing**: Supports batch image processing for enhanced efficiency.
-  **ÅúÁ¿´¦Àí**£ºÖ§³ÖÅúÁ¿Í¼Ïñ´¦ÀíÒÔÌá¸ßĞ§ÂÊ¡£
+  **æ‰¹é‡å¤„ç†**ï¼šæ”¯æŒæ‰¹é‡å›¾åƒå¤„ç†ä»¥æé«˜æ•ˆç‡ã€‚
 
 ---
 
-### **Project Structure | ÏîÄ¿½á¹¹**
+### **Project Structure | é¡¹ç›®ç»“æ„**
 
 ```plaintext
 .
@@ -42,27 +42,27 @@ This project focuses on removing watermarks from images using advanced deep lear
 
 ---
 
-### **File Explanations | ÎÄ¼şËµÃ÷**
+### **File Explanations | æ–‡ä»¶è¯´æ˜**
 
 #### **main.py**
 - **Description**: Entry point for training and testing the GAN model.
 - **Key Parameters**:
   - `--mode`: Specifies the mode of operation (`train` or `test`).
-    **Ä£Ê½**£ºÖ¸¶¨²Ù×÷Ä£Ê½£¨`train`ÑµÁ·£¬`test`²âÊÔ£©¡£
+    **æ¨¡å¼**ï¼šæŒ‡å®šæ“ä½œæ¨¡å¼ï¼ˆ`train`è®­ç»ƒï¼Œ`test`æµ‹è¯•ï¼‰ã€‚
   - `--epochs`: Number of training iterations (default `100`).
-    **µü´ú´ÎÊı**£ºÄ¬ÈÏÖµÎª`100`¡£
+    **è¿­ä»£æ¬¡æ•°**ï¼šé»˜è®¤å€¼ä¸º`100`ã€‚
   - `--model_path`: Path to the generator model file for testing.
-    **Ä£ĞÍÂ·¾¶**£º²âÊÔÊ±¼ÓÔØµÄÉú³ÉÆ÷Ä£ĞÍÂ·¾¶¡£
+    **æ¨¡å‹è·¯å¾„**ï¼šæµ‹è¯•æ—¶åŠ è½½çš„ç”Ÿæˆå™¨æ¨¡å‹è·¯å¾„ã€‚
   - `--input_image` & `--output_image`: Paths for input and output images during testing.
-    **ÊäÈëºÍÊä³öÂ·¾¶**£º²âÊÔÊ±Ö¸¶¨µÄÍ¼ÏñÂ·¾¶¡£
+    **è¾“å…¥å’Œè¾“å‡ºè·¯å¾„**ï¼šæµ‹è¯•æ—¶æŒ‡å®šçš„å›¾åƒè·¯å¾„ã€‚
 
 #### **app.py**
 - **Description**: Implements a FastAPI server for real-time image processing.
 - **Key Endpoints**:
   - `POST /process-image-url-preview/`: Accepts an image URL for watermark removal.
-    **´¦ÀíURLÍ¼Ïñ**£º´ÓURL¼ÓÔØÍ¼Ïñ²¢ÒÆ³ıË®Ó¡¡£
+    **å¤„ç†URLå›¾åƒ**ï¼šä»URLåŠ è½½å›¾åƒå¹¶ç§»é™¤æ°´å°ã€‚
   - `POST /process-image-base64-preview/`: Accepts Base64-encoded image data.
-    **´¦ÀíBase64Í¼Ïñ**£º½ÓÊÕBase64±àÂëµÄÍ¼Ïñ²¢ÒÆ³ıË®Ó¡¡£
+    **å¤„ç†Base64å›¾åƒ**ï¼šæ¥æ”¶Base64ç¼–ç çš„å›¾åƒå¹¶ç§»é™¤æ°´å°ã€‚
 - **Example**:
   ```json
   {
@@ -75,36 +75,36 @@ This project focuses on removing watermarks from images using advanced deep lear
 - **Key Class**: `WatermarkDataset`.
   - **Methods**:
     - `__getitem__`: Returns a paired watermarked and clean image for training.
-      **·µ»ØÒ»¶ÔË®Ó¡Í¼ÏñºÍ¸É¾»Í¼Ïñ£¬ÓÃÓÚÑµÁ·¡£**
+      **è¿”å›ä¸€å¯¹æ°´å°å›¾åƒå’Œå¹²å‡€å›¾åƒï¼Œç”¨äºè®­ç»ƒã€‚**
     - `transform`: Resizes images to 256x256 and normalizes them to [-1, 1].
-      **µ÷ÕûÍ¼Ïñ´óĞ¡Îª256x256£¬²¢½«Æä¹éÒ»»¯µ½[-1, 1]·¶Î§ÄÚ¡£**
+      **è°ƒæ•´å›¾åƒå¤§å°ä¸º256x256ï¼Œå¹¶å°†å…¶å½’ä¸€åŒ–åˆ°[-1, 1]èŒƒå›´å†…ã€‚**
 
 #### **model.py**
 - **Description**: Contains the definitions for the generator and discriminator.
 - **Key Components**:
   - **Generator**: Utilizes residual blocks, attention mechanisms, and transformer layers to learn high-quality features.
-    **Éú³ÉÆ÷**£ºÊ¹ÓÃ²Ğ²î¿é¡¢×¢ÒâÁ¦»úÖÆºÍTransformer²ãÒÔÑ§Ï°¸ßÖÊÁ¿ÌØÕ÷¡£
+    **ç”Ÿæˆå™¨**ï¼šä½¿ç”¨æ®‹å·®å—ã€æ³¨æ„åŠ›æœºåˆ¶å’ŒTransformerå±‚ä»¥å­¦ä¹ é«˜è´¨é‡ç‰¹å¾ã€‚
   - **Discriminator**: Differentiates between real clean images and generated images.
-    **ÅĞ±ğÆ÷**£ºÇø·ÖÕæÊµÇåÎúÍ¼ÏñÓëÉú³ÉÍ¼Ïñ¡£
+    **åˆ¤åˆ«å™¨**ï¼šåŒºåˆ†çœŸå®æ¸…æ™°å›¾åƒä¸ç”Ÿæˆå›¾åƒã€‚
   - **Parameters**:
     - **Kernel Size**: Controls the receptive field in convolution layers.
-      **¾í»ıºË´óĞ¡**£º¾ö¶¨¾í»ı²ãµÄ¸ĞÊÜÒ°¡£
+      **å·ç§¯æ ¸å¤§å°**ï¼šå†³å®šå·ç§¯å±‚çš„æ„Ÿå—é‡ã€‚
     - **Channels**: Determines the depth of feature maps.
-      **Í¨µÀÊı**£º¿ØÖÆÌØÕ÷Í¼µÄÉî¶È¡£
+      **é€šé“æ•°**ï¼šæ§åˆ¶ç‰¹å¾å›¾çš„æ·±åº¦ã€‚
     - **Transformer Block Size**: Default: 16. Ensures compatibility with input dimensions.
-      **Transformer¿é´óĞ¡**£ºÄ¬ÈÏÖµÎª16£¬È·±£ÓëÊäÈëÎ¬¶È¼æÈİ¡£
+      **Transformerå—å¤§å°**ï¼šé»˜è®¤å€¼ä¸º16ï¼Œç¡®ä¿ä¸è¾“å…¥ç»´åº¦å…¼å®¹ã€‚
 
 #### **train.py**
 - **Description**: Implements the GAN training pipeline.
 - **Key Loss Functions**:
   - **Adversarial Loss**: Ensures the generator fools the discriminator.
-    **¶Ô¿¹ËğÊ§**£ºÈ·±£Éú³ÉÆ÷¿ÉÒÔÆÛÆ­ÅĞ±ğÆ÷¡£
+    **å¯¹æŠ—æŸå¤±**ï¼šç¡®ä¿ç”Ÿæˆå™¨å¯ä»¥æ¬ºéª—åˆ¤åˆ«å™¨ã€‚
   - **Perceptual Loss**: Compares feature similarities between generated and clean images.
-    **¸ĞÖªËğÊ§**£º±È½ÏÉú³ÉÍ¼ÏñÓëÇåÎúÍ¼ÏñµÄÌØÕ÷ÏàËÆĞÔ¡£
+    **æ„ŸçŸ¥æŸå¤±**ï¼šæ¯”è¾ƒç”Ÿæˆå›¾åƒä¸æ¸…æ™°å›¾åƒçš„ç‰¹å¾ç›¸ä¼¼æ€§ã€‚
   - **Edge-Preserving Loss**: Focuses on retaining edges in the generated images.
-    **±ßÔµ±£»¤ËğÊ§**£º±£ÁôÉú³ÉÍ¼ÏñÖĞµÄ±ßÔµ¡£
+    **è¾¹ç¼˜ä¿æŠ¤æŸå¤±**ï¼šä¿ç•™ç”Ÿæˆå›¾åƒä¸­çš„è¾¹ç¼˜ã€‚
   - **Laplacian Loss**: Enhances high-frequency components for sharpness.
-    **À­ÆÕÀ­Ë¹ËğÊ§**£ºÔöÇ¿¸ßÆµ³É·ÖÒÔÌá¸ßÍ¼ÏñÇåÎú¶È¡£ 
+    **æ‹‰æ™®æ‹‰æ–¯æŸå¤±**ï¼šå¢å¼ºé«˜é¢‘æˆåˆ†ä»¥æé«˜å›¾åƒæ¸…æ™°åº¦ã€‚ 
 
 #### **test.py**
 - **Description**: Provides testing and post-processing functionalities.
@@ -117,27 +117,27 @@ This project focuses on removing watermarks from images using advanced deep lear
 - **Description**: Utility functions for image handling and preprocessing.
 - **Key Functions**:
   - **load_image**: Loads an image and normalizes it to PyTorch tensor format.
-    **¼ÓÔØÍ¼Ïñ²¢½«Æä¹éÒ»»¯ÎªPyTorchÕÅÁ¿¸ñÊ½¡£**
+    **åŠ è½½å›¾åƒå¹¶å°†å…¶å½’ä¸€åŒ–ä¸ºPyTorchå¼ é‡æ ¼å¼ã€‚**
   - **pad_to_block_size**: Ensures input images are padded for transformer compatibility.
-    **Ìî³äÊäÈëÍ¼ÏñÒÔÈ·±£ÓëTransformer²Ù×÷¼æÈİ¡£**
+    **å¡«å……è¾“å…¥å›¾åƒä»¥ç¡®ä¿ä¸Transformeræ“ä½œå…¼å®¹ã€‚**
 
 ---
 
-### **Key Parameters Influencing Output Quality | Ó°ÏìÊä³öÖÊÁ¿µÄ¹Ø¼ü²ÎÊı**
+### **Key Parameters Influencing Output Quality | å½±å“è¾“å‡ºè´¨é‡çš„å…³é”®å‚æ•°**
 
-1. **Epochs | ÑµÁ·ÂÖ´Î**:
+1. **Epochs | è®­ç»ƒè½®æ¬¡**:
    - Default: 100. More epochs improve quality but increase training time.
-     **Ä¬ÈÏÖµ£º100¡£¸ü¶àÂÖ´Î»áÌáÉıÖÊÁ¿£¬µ«»áÔö¼ÓÑµÁ·Ê±¼ä¡£**
+     **é»˜è®¤å€¼ï¼š100ã€‚æ›´å¤šè½®æ¬¡ä¼šæå‡è´¨é‡ï¼Œä½†ä¼šå¢åŠ è®­ç»ƒæ—¶é—´ã€‚**
 
-2. **Learning Rate | Ñ§Ï°ÂÊ**:
+2. **Learning Rate | å­¦ä¹ ç‡**:
    - Default: 0.0001. Higher rates may destabilize training; lower rates slow convergence.
-     **Ä¬ÈÏÖµ£º0.0001¡£½Ï¸ßµÄÑ§Ï°ÂÊ¿ÉÄÜµ¼ÖÂ²»ÎÈ¶¨£»½ÏµÍµÄÑ§Ï°ÂÊ»á¼õÂıÊÕÁ²ËÙ¶È¡£**
+     **é»˜è®¤å€¼ï¼š0.0001ã€‚è¾ƒé«˜çš„å­¦ä¹ ç‡å¯èƒ½å¯¼è‡´ä¸ç¨³å®šï¼›è¾ƒä½çš„å­¦ä¹ ç‡ä¼šå‡æ…¢æ”¶æ•›é€Ÿåº¦ã€‚**
 
-3. **Batch Size | ÅúÁ¿´óĞ¡**:
+3. **Batch Size | æ‰¹é‡å¤§å°**:
    - Default: 16. Larger sizes enhance stability but require more memory.
-     **Ä¬ÈÏÖµ£º16¡£½Ï´óÖµÌá¸ßÎÈ¶¨ĞÔ£¬µ«ĞèÒª¸ü¶àÄÚ´æ¡£**
+     **é»˜è®¤å€¼ï¼š16ã€‚è¾ƒå¤§å€¼æé«˜ç¨³å®šæ€§ï¼Œä½†éœ€è¦æ›´å¤šå†…å­˜ã€‚**
 
-4. **Loss Weights | ËğÊ§È¨ÖØ**:
+4. **Loss Weights | æŸå¤±æƒé‡**:
      g_loss = (
                     g_gan_loss +
                     9 * g_l1_loss +
@@ -146,45 +146,45 @@ This project focuses on removing watermarks from images using advanced deep lear
                     1 * g_laplacian_loss +
                     1 * g_color_loss
                 )
-    - **GAN Loss (`g_gan_loss`) | GAN¶Ô¿¹ËğÊ§**: Encourages realistic textures by ensuring generated images are indistinguishable from real ones.
-    **Çı¶¯Éú³ÉÆ÷Ñ§Ï°ÕæÊµÎÆÀí£¬Ê¹Éú³ÉÍ¼ÏñÓëÕæÊµÍ¼ÏñÄÑÒÔÇø·Ö¡£**
+    - **GAN Loss (`g_gan_loss`) | GANå¯¹æŠ—æŸå¤±**: Encourages realistic textures by ensuring generated images are indistinguishable from real ones.
+    **é©±åŠ¨ç”Ÿæˆå™¨å­¦ä¹ çœŸå®çº¹ç†ï¼Œä½¿ç”Ÿæˆå›¾åƒä¸çœŸå®å›¾åƒéš¾ä»¥åŒºåˆ†ã€‚**
 
-    - **L1 Loss (`g_l1_loss`) | L1ËğÊ§**: Focuses on pixel-level accuracy to retain global structure. Weight: `10`.
-    **ÔÚÏñËØ¼¶±£Ö¤×¼È·ĞÔ£¬°ïÖú±£ÁôÕûÌå½á¹¹¡£È¨ÖØ£º`9`¡£**
+    - **L1 Loss (`g_l1_loss`) | L1æŸå¤±**: Focuses on pixel-level accuracy to retain global structure. Weight: `10`.
+    **åœ¨åƒç´ çº§ä¿è¯å‡†ç¡®æ€§ï¼Œå¸®åŠ©ä¿ç•™æ•´ä½“ç»“æ„ã€‚æƒé‡ï¼š`9`ã€‚**
 
-    - **Perceptual Loss (`g_perceptual_loss`) | ¸ĞÖªËğÊ§**: Preserves high-level semantic features using pre-trained networks like VGG19. Weight: `1`.
-    **Ê¹ÓÃVGG19µÈÔ¤ÑµÁ·ÍøÂç±£Áô¸ß²ãÓïÒåÌØÕ÷¡£È¨ÖØ£º`1`¡£**
+    - **Perceptual Loss (`g_perceptual_loss`) | æ„ŸçŸ¥æŸå¤±**: Preserves high-level semantic features using pre-trained networks like VGG19. Weight: `1`.
+    **ä½¿ç”¨VGG19ç­‰é¢„è®­ç»ƒç½‘ç»œä¿ç•™é«˜å±‚è¯­ä¹‰ç‰¹å¾ã€‚æƒé‡ï¼š`1`ã€‚**
 
-    - **Edge Loss (`g_edge_loss`) | ±ßÔµËğÊ§**: Maintains sharp boundaries and prevents blurring. Weight: `2`.
-    **±£³Ö±ß½çÇåÎú£¬·ÀÖ¹Ä£ºı¡£È¨ÖØ£º`3`¡£**
+    - **Edge Loss (`g_edge_loss`) | è¾¹ç¼˜æŸå¤±**: Maintains sharp boundaries and prevents blurring. Weight: `2`.
+    **ä¿æŒè¾¹ç•Œæ¸…æ™°ï¼Œé˜²æ­¢æ¨¡ç³Šã€‚æƒé‡ï¼š`3`ã€‚**
 
-    - **Laplacian Loss (`g_laplacian_loss`) | À­ÆÕÀ­Ë¹ËğÊ§**: Enhances details and sharpness by focusing on high-frequency components. Weight: `1`.
-    **Í¨¹ıÔöÇ¿¸ßÆµ·ÖÁ¿Ìá¸ßÏ¸½ÚºÍÇåÎú¶È¡£È¨ÖØ£º`1`¡£**
+    - **Laplacian Loss (`g_laplacian_loss`) | æ‹‰æ™®æ‹‰æ–¯æŸå¤±**: Enhances details and sharpness by focusing on high-frequency components. Weight: `1`.
+    **é€šè¿‡å¢å¼ºé«˜é¢‘åˆ†é‡æé«˜ç»†èŠ‚å’Œæ¸…æ™°åº¦ã€‚æƒé‡ï¼š`1`ã€‚**
 
-    - **Color Loss (`g_color_loss`) | É«²ÊËğÊ§**: Ensures color consistency with the ground truth. Weight: `1`.
-    **±£Ö¤Éú³ÉÍ¼ÏñÓëÕæÊµÍ¼ÏñµÄÑÕÉ«Ò»ÖÂĞÔ¡£È¨ÖØ£º`1`¡£**
+    - **Color Loss (`g_color_loss`) | è‰²å½©æŸå¤±**: Ensures color consistency with the ground truth. Weight: `1`.
+    **ä¿è¯ç”Ÿæˆå›¾åƒä¸çœŸå®å›¾åƒçš„é¢œè‰²ä¸€è‡´æ€§ã€‚æƒé‡ï¼š`1`ã€‚**
 
 
-5. **Post-Processing | ºó´¦Àí**:
+5. **Post-Processing | åå¤„ç†**:
    - Denoising: Reduces residual noise.
-     **È¥Ôë**£º¼õÉÙ²ĞÁôÔëÉù¡£
+     **å»å™ª**ï¼šå‡å°‘æ®‹ç•™å™ªå£°ã€‚
    - Sharpening: Enhances visual clarity.
-     **Èñ»¯**£ºÌáÉıÊÓ¾õÇåÎú¶È¡£
+     **é”åŒ–**ï¼šæå‡è§†è§‰æ¸…æ™°åº¦ã€‚
 
 ---
-### **Quick Start | ¿ìËÙ¿ªÊ¼**
+### **Quick Start | å¿«é€Ÿå¼€å§‹**
 
-#### **Environment Setup | »·¾³ÅäÖÃ**
+#### **Environment Setup | ç¯å¢ƒé…ç½®**
 
-1. **Install Required Packages | °²×°±ØÒªµÄÒÀÀµ**:
+1. **Install Required Packages | å®‰è£…å¿…è¦çš„ä¾èµ–**:
    Use the following command to install all required Python libraries:
-   **Ê¹ÓÃÒÔÏÂÃüÁî°²×°ËùÓĞ±ØÒªµÄPython¿â£º**
+   **ä½¿ç”¨ä»¥ä¸‹å‘½ä»¤å®‰è£…æ‰€æœ‰å¿…è¦çš„Pythonåº“ï¼š**
    ```bash
    pip install -r requirements.txt
    ```
 
    The `requirements.txt` file should include the following dependencies:
-   **`requirements.txt` ÎÄ¼şÓ¦°üº¬ÒÔÏÂÒÀÀµ£º**
+   **`requirements.txt` æ–‡ä»¶åº”åŒ…å«ä»¥ä¸‹ä¾èµ–ï¼š**
    ```plaintext
    torch
    torchvision
@@ -196,53 +196,53 @@ This project focuses on removing watermarks from images using advanced deep lear
    numpy
    ```
 
-2. **Prepare Dataset | ×¼±¸Êı¾İ¼¯**:
+2. **Prepare Dataset | å‡†å¤‡æ•°æ®é›†**:
    - Ensure the dataset is structured as follows:
-     **È·±£Êı¾İ¼¯°´ÕÕÒÔÏÂ½á¹¹×éÖ¯£º**
+     **ç¡®ä¿æ•°æ®é›†æŒ‰ç…§ä»¥ä¸‹ç»“æ„ç»„ç»‡ï¼š**
      ```plaintext
      data/
-     ©À©¤©¤ train/
-     ©¦   ©À©¤©¤ watermarked/   # Folder for input watermarked images
-     ©¦   ©À©¤©¤ clean/         # Folder for corresponding clean images
-     ©¸©¤©¤ test/              # Folder for test images
+     â”œâ”€â”€ train/
+     â”‚   â”œâ”€â”€ watermarked/   # Folder for input watermarked images
+     â”‚   â”œâ”€â”€ clean/         # Folder for corresponding clean images
+     â””â”€â”€ test/              # Folder for test images
      ```
 
-#### **Training the Model | ÑµÁ·Ä£ĞÍ**
+#### **Training the Model | è®­ç»ƒæ¨¡å‹**
 ```bash
 python main.py --mode train --epochs 1500
 ```
 
 1. Prepare the training dataset in `data/train/`.
-   **×¼±¸ÑµÁ·Êı¾İ¼¯µ½ `data/train/` ÎÄ¼ş¼ĞÖĞ¡£**
+   **å‡†å¤‡è®­ç»ƒæ•°æ®é›†åˆ° `data/train/` æ–‡ä»¶å¤¹ä¸­ã€‚**
 2. Run the above command to train the model.
-   **ÔËĞĞÉÏÊöÃüÁîÒÔÑµÁ·Ä£ĞÍ¡£**
+   **è¿è¡Œä¸Šè¿°å‘½ä»¤ä»¥è®­ç»ƒæ¨¡å‹ã€‚**
 3. Check the `models/` directory for saved checkpoints.
-   **ÔÚ `models/` Ä¿Â¼ÖĞ¼ì²é±£´æµÄÄ£ĞÍ¼ì²éµã¡£**
+   **åœ¨ `models/` ç›®å½•ä¸­æ£€æŸ¥ä¿å­˜çš„æ¨¡å‹æ£€æŸ¥ç‚¹ã€‚**
 
-#### **Testing the Model | ²âÊÔÄ£ĞÍ**
+#### **Testing the Model | æµ‹è¯•æ¨¡å‹**
 ```bash
 python main.py --mode test --model_path models/generator_epoch_1500.pth --input_image input.jpg --output_image output.jpg
 ```
 1. Ensure the trained model is in `models/`.
-   **È·±£ÑµÁ·ºÃµÄÄ£ĞÍ±£´æÔÚ `models/` ÖĞ¡£**
+   **ç¡®ä¿è®­ç»ƒå¥½çš„æ¨¡å‹ä¿å­˜åœ¨ `models/` ä¸­ã€‚**
 2. Provide an input image and specify the output path.
-   **Ìá¹©ÊäÈëÍ¼Ïñ²¢Ö¸¶¨Êä³öÂ·¾¶¡£**
+   **æä¾›è¾“å…¥å›¾åƒå¹¶æŒ‡å®šè¾“å‡ºè·¯å¾„ã€‚**
 3. Processed images will be saved at the output path.
-   **´¦ÀíºóµÄÍ¼Ïñ½«±£´æÔÚÊä³öÂ·¾¶ÖĞ¡£**
+   **å¤„ç†åçš„å›¾åƒå°†ä¿å­˜åœ¨è¾“å‡ºè·¯å¾„ä¸­ã€‚**
 
-#### **Running the FastAPI Server | Æô¶¯FastAPI·şÎñ**
+#### **Running the FastAPI Server | å¯åŠ¨FastAPIæœåŠ¡**
 ```bash
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 1. Start the server using the command above.
-   **Ê¹ÓÃÉÏÊöÃüÁîÆô¶¯·şÎñ¡£**
+   **ä½¿ç”¨ä¸Šè¿°å‘½ä»¤å¯åŠ¨æœåŠ¡ã€‚**
 2. Access API documentation at `http://localhost:8000/docs`.
-   **ÔÚ `http://localhost:8000/docs` ·ÃÎÊAPIÎÄµµ¡£**
+   **åœ¨ `http://localhost:8000/docs` è®¿é—®APIæ–‡æ¡£ã€‚**
 
 ---
 
 
-### **Example Results | Ê¾Àı½á¹û**
+### **Example Results | ç¤ºä¾‹ç»“æœ**
 
 #### Input Image (Watermarked):
 ![Input](data/test/sample_input.jpg)

@@ -7,6 +7,9 @@ import torchvision.transforms as transforms
 import cv2
 import torch.nn.functional as F  # 新增导入
 from PIL import ImageEnhance
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
+import time
 
 def pad_to_block_size(image, block_size=16):
     """
@@ -31,7 +34,7 @@ def test_model(model_path, input_folder="data/test", output_folder="outputs"):
 
     # 加载生成器模型
     generator = Generator().to(device)
-    generator.load_state_dict(torch.load(model_path, map_location=device))
+    generator.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     generator.eval()
 
     if not os.path.exists(output_folder):
@@ -61,11 +64,11 @@ def test_model(model_path, input_folder="data/test", output_folder="outputs"):
 
         return sharpened
 
-    for filename in os.listdir(input_folder):
+    def process_image(filename):
         input_image_path = os.path.join(input_folder, filename)
 
         if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-            continue
+            return
 
         input_image = Image.open(input_image_path).convert("RGB")
         original_size = input_image.size
@@ -90,4 +93,16 @@ def test_model(model_path, input_folder="data/test", output_folder="outputs"):
         output_image = enhancer.enhance(2.0)  # 增强锐度（值可以调节）
 
         output_image.save(output_image_path, quality=100)
-        print(f"Processed {filename} and saved to {output_image_path}")
+        # print(f"Processed {filename} and saved to {output_image_path}")
+
+    filenames = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+
+    start_time = time.time()  # Start time
+
+    with ThreadPoolExecutor() as executor:
+        futures = {executor.submit(process_image, filename): filename for filename in filenames}
+        for future in tqdm(as_completed(futures), total=len(futures)):
+            future.result()
+
+    end_time = time.time()  # End time
+    print(f"Total elapsed time: {end_time - start_time:.2f} seconds")
