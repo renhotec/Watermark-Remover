@@ -1,6 +1,8 @@
-__pycache__
-.idea
-models
-data
-outputs
-script/__pycache__
+__pycache__/
+.idea/
+models/*
+!models/
+data/*
+!data/
+outputs/
+script/__pycache__/

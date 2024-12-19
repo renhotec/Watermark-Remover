@@ -11,6 +11,7 @@ from scripts.dataset import WatermarkDataset
 from scripts.model import EnhancedGenerator, Discriminator
 import cv2
 import numpy as np
+from scripts.test import test_model
 
 
 class PerceptualLoss(nn.Module):
@@ -66,6 +67,7 @@ class ColorConsistencyLoss(nn.Module):
     def forward(self, generated, target):
         return F.l1_loss(generated.mean(dim=(2, 3)), target.mean(dim=(2, 3)))
 
+learning_rate = 1e-4
 
 def train_model(epochs=100, dir=""):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,8 +80,8 @@ def train_model(epochs=100, dir=""):
     generator = EnhancedGenerator().to(device)
     discriminator = Discriminator().to(device)
 
-    g_optimizer = optim.Adam(generator.parameters(), lr=0.0001, betas=(0.5, 0.999))
-    d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0001, betas=(0.5, 0.999))
+    g_optimizer = optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    d_optimizer = optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 
     criterion_gan = nn.BCEWithLogitsLoss().to(device)
     criterion_l1 = nn.L1Loss().to(device)
@@ -157,6 +159,7 @@ def train_model(epochs=100, dir=""):
                 )
 
             scaler.scale(g_loss).backward()
+            torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=1.0)
             scaler.step(g_optimizer)
             scaler.update()
 
@@ -165,6 +168,8 @@ def train_model(epochs=100, dir=""):
 
         if (epoch + 1) % 10 == 0:
             torch.save(generator.state_dict(), f"models/generator_epoch_{epoch + 1}.pth")
+            # 调用模型测试 data/test目录下的test.jpg来测试处理效果，将处理后的图片保存到data/test目录下，文件名使用 test_{epoch + 1}.jpg的命名形式
+            test_model(model_path=f"models/generator_epoch_{epoch + 1}.pth", input_image_path="test.jpg", output_image_path=f"test_{epoch + 1}.jpg")
 
     total_duration = time.time() - total_start_time
     print(f"Training completed in {total_duration:.2f}s.")

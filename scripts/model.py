@@ -74,9 +74,9 @@ class EnhancedGenerator(nn.Module):
     def __init__(self):
         super(EnhancedGenerator, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
             nn.ReLU(inplace=True),
         )
         self.residual_blocks = nn.Sequential(
@@ -104,11 +104,11 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(6, 64, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(6, 64, kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(128, 1, kernel_size=4, stride=1, padding=1),
+            nn.Conv2d(128, 1, kernel_size=4, stride=1, padding=1, padding_mode="reflect"),
             nn.Sigmoid()
         )
 

@@ -22,7 +22,7 @@ def main():
         train_model(epochs=args.epochs, dir=args.dir)
     elif args.mode == "test":
         if args.input_image and args.output_image:
-            test_model(model_path=args.model_path, input_image=args.input_image, output_image=args.output_image)
+            test_model(model_path=args.model_path, input_image_path=args.input_image, output_image_path=args.output_image)
         else:
             test_model(model_path=args.model_path)
 

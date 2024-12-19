@@ -28,7 +28,7 @@ def pad_to_block_size(image, block_size=16):
     #print(f"Padded image from ({h}, {w}) to ({new_h}, {new_w})")  # 调试信息
     return image
 
-def test_model(model_path, input_folder="data/test", output_folder="outputs"):
+def test_model(model_path, input_image_path="", output_image_path="", input_folder="data/test", output_folder="outputs"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -64,7 +64,7 @@ def test_model(model_path, input_folder="data/test", output_folder="outputs"):
 
         return sharpened
 
-    def process_image(filename):
+    def process_image(filename, output_image_path):
         input_image_path = os.path.join(input_folder, filename)
 
         if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -88,19 +88,26 @@ def test_model(model_path, input_folder="data/test", output_folder="outputs"):
 
         output_image = Image.fromarray(output_image_np.astype(np.uint8)).resize(original_size, Image.LANCZOS)
 
-        output_image_path = os.path.join(output_folder, filename)
+        if output_image_path != "":
+            output_image_path = os.path.join(output_folder, output_image_path)
+        else:
+            output_image_path = os.path.join(output_folder, filename)
         enhancer = ImageEnhance.Sharpness(output_image)
         output_image = enhancer.enhance(2.0)  # 增强锐度（值可以调节）
 
         output_image.save(output_image_path, quality=100)
         # print(f"Processed {filename} and saved to {output_image_path}")
 
+    if input_image_path != "":
+        process_image(input_image_path, output_image_path)
+        return
+    
     filenames = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
     start_time = time.time()  # Start time
 
     with ThreadPoolExecutor() as executor:
-        futures = {executor.submit(process_image, filename): filename for filename in filenames}
+        futures = {executor.submit(process_image, filename, ""): filename for filename in filenames}
         for future in tqdm(as_completed(futures), total=len(futures)):
             future.result()
 
