@@ -11,18 +11,18 @@ def main():
                         help="Choose train or test mode")
     parser.add_argument("--dir", type=str, default="", help="Directory of clean images")
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
-    parser.add_argument("--model_path", type=str, default="models/generator_epoch_100.pth",
-                        help="Path to the trained model")
+    parser.add_argument("--model_path", type=str, default="models/generator_epoch_100.pth", help="Path to the trained model")
+    parser.add_argument("--pretrained", type=str, default="", help="Use pre-trained model")
     parser.add_argument("--input_image", type=str, help="Path to input image for testing (optional for batch mode)")
     parser.add_argument("--output_image", type=str, help="Path to save output image (optional for batch mode)")
 
     args = parser.parse_args()
 
     if args.mode == "train":
-        train_model(epochs=args.epochs, dir=args.dir)
+        train_model(epochs=args.epochs, dir=args.dir, pretrained_pth=args.pretrained)
     elif args.mode == "test":
         if args.input_image and args.output_image:
-            test_model(model_path=args.model_path, input_image_path=args.input_image, output_image_path=args.output_image)
+            test_model(model_path=args.model_path, input_image_path=args.input_image, output_folder=args.output_image)
         else:
             test_model(model_path=args.model_path)
 

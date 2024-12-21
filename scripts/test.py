@@ -28,13 +28,13 @@ def pad_to_block_size(image, block_size=16):
     #print(f"Padded image from ({h}, {w}) to ({new_h}, {new_w})")  # 调试信息
     return image
 
-def test_model(model_path, input_image_path="", output_image_path="", input_folder="data/test", output_folder="outputs"):
+def test_model(model_path, input_image_path="data/train/test", output_folder="outputs"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # 加载生成器模型
     generator = Generator().to(device)
-    generator.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
+    generator.load_state_dict(torch.load(model_path), strict=False)
     generator.eval()
 
     if not os.path.exists(output_folder):
@@ -47,6 +47,9 @@ def test_model(model_path, input_image_path="", output_image_path="", input_fold
     unnormalize = transforms.Compose([
         transforms.Normalize((-1, -1, -1), (2, 2, 2))  # 反归一化
     ])
+
+    def get_generator_epoch_number(model_path):
+        return int(model_path.split("_")[-1].split(".")[0])
 
     def post_process(image_np):
         """后处理：去噪、轻微锐化，不改变原始颜色"""
@@ -65,51 +68,63 @@ def test_model(model_path, input_image_path="", output_image_path="", input_fold
         return sharpened
 
     def process_image(filename, output_image_path):
-        input_image_path = os.path.join(input_folder, filename)
+        try:
+            if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                return
+            input_image = Image.open(filename).convert("RGB")
+            original_size = input_image.size
+            input_tensor = transform(input_image).unsqueeze(0).to(device)
 
-        if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-            return
+            # 调整输入尺寸
+            input_tensor = pad_to_block_size(input_tensor, block_size=16)
 
-        input_image = Image.open(input_image_path).convert("RGB")
-        original_size = input_image.size
-        input_tensor = transform(input_image).unsqueeze(0).to(device)
+            with torch.no_grad():
+                output_tensor = generator(input_tensor)
 
-        # 调整输入尺寸
-        input_tensor = pad_to_block_size(input_tensor, block_size=16)
+            output_tensor = unnormalize(output_tensor.squeeze(0)).clamp(0, 1)
+            output_image_np = output_tensor.permute(1, 2, 0).cpu().numpy()
 
-        with torch.no_grad():
-            output_tensor = generator(input_tensor)
+            # 后处理步骤
+            output_image_np = post_process(output_image_np)
 
-        output_tensor = unnormalize(output_tensor.squeeze(0)).clamp(0, 1)
-        output_image_np = output_tensor.permute(1, 2, 0).cpu().numpy()
+            output_image = Image.fromarray(output_image_np.astype(np.uint8)).resize(original_size, Image.LANCZOS)
 
-        # 后处理步骤
-        output_image_np = post_process(output_image_np)
+            if output_image_path != "":
+                output_image_path = os.path.join(output_folder, output_image_path)
+            else:
+                output_image_path = os.path.join(output_folder, filename)
+            enhancer = ImageEnhance.Sharpness(output_image)
+            output_image = enhancer.enhance(2.0)  # 增强锐度（值可以调节）
 
-        output_image = Image.fromarray(output_image_np.astype(np.uint8)).resize(original_size, Image.LANCZOS)
-
-        if output_image_path != "":
-            output_image_path = os.path.join(output_folder, output_image_path)
-        else:
-            output_image_path = os.path.join(output_folder, filename)
-        enhancer = ImageEnhance.Sharpness(output_image)
-        output_image = enhancer.enhance(2.0)  # 增强锐度（值可以调节）
-
-        output_image.save(output_image_path, quality=100)
-        # print(f"Processed {filename} and saved to {output_image_path}")
+            output_image.save(output_image_path, quality=100)
+            # print(f"Processed {filename} and saved to {output_image_path}")
+        except Exception as e:
+            print(f"Failed to process {filename} to {output_image_path}: {e}")
 
     if input_image_path != "":
-        process_image(input_image_path, output_image_path)
-        return
-    
-    filenames = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        # 如何 input_image_path 是文件路径，则直接处理该文件
+        if os.path.isfile(input_image_path):
+            process_image(input_image_path, output_image_path)
+        elif os.path.isdir(input_image_path):
+            model_gen = get_generator_epoch_number(model_path)
+            start_time = time.time()  # Start time
+            filenames = [f for f in os.listdir(input_image_path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+            with ThreadPoolExecutor() as executor:
+                futures = {executor.submit(process_image, os.path.join(input_image_path, filename), f"{os.path.splitext(filename)[0]}_gen{model_gen}{os.path.splitext(filename)[1]}"): filename for filename in filenames}
+                for future in tqdm(as_completed(futures), total=len(futures)):
+                    future.result()
 
-    start_time = time.time()  # Start time
+            end_time = time.time()  # End time
+            print(f"Total elapsed time: {end_time - start_time:.2f} seconds")
+    else:
+        print("No image input")
 
-    with ThreadPoolExecutor() as executor:
-        futures = {executor.submit(process_image, filename, ""): filename for filename in filenames}
-        for future in tqdm(as_completed(futures), total=len(futures)):
-            future.result()
+    # start_time = time.time()  # Start time
 
-    end_time = time.time()  # End time
-    print(f"Total elapsed time: {end_time - start_time:.2f} seconds")
+    # with ThreadPoolExecutor() as executor:
+    #     futures = {executor.submit(process_image, filename, ""): filename for filename in filenames}
+    #     for future in tqdm(as_completed(futures), total=len(futures)):
+    #         future.result()
+
+    # end_time = time.time()  # End time
+    # print(f"Total elapsed time: {end_time - start_time:.2f} seconds")

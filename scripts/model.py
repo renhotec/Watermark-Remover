@@ -70,6 +70,26 @@ class ResidualBlock(nn.Module):
         transformer_out = self.transformer(attention_out)  # Transformer Block 输出
         return x + transformer_out
 
+# 引入 SelfAttention 模块
+class SelfAttention(nn.Module):
+    def __init__(self, in_dim):
+        super(SelfAttention, self).__init__()
+        self.query = nn.Conv2d(in_dim, in_dim // 8, kernel_size=1)
+        self.key = nn.Conv2d(in_dim, in_dim // 8, kernel_size=1)
+        self.value = nn.Conv2d(in_dim, in_dim, kernel_size=1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        batch, channels, height, width = x.size()
+        proj_query = self.query(x).view(batch, -1, width * height).permute(0, 2, 1)
+        proj_key = self.key(x).view(batch, -1, width * height)
+        energy = torch.bmm(proj_query, proj_key)
+        attention = F.softmax(energy, dim=-1)
+        proj_value = self.value(x).view(batch, -1, width * height)
+        out = torch.bmm(proj_value, attention.permute(0, 2, 1))
+        out = out.view(batch, channels, height, width)
+        return self.gamma * out + x
+
 class EnhancedGenerator(nn.Module):
     def __init__(self):
         super(EnhancedGenerator, self).__init__()
@@ -79,6 +99,8 @@ class EnhancedGenerator(nn.Module):
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
             nn.ReLU(inplace=True),
         )
+        # 自注意力模块
+        self.attention = SelfAttention(128)
         self.residual_blocks = nn.Sequential(
             *[ResidualBlock(128) for _ in range(12)]
         )
