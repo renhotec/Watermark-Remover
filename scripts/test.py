@@ -34,7 +34,7 @@ def test_model(model_path, input_image_path="data/train/test", output_folder="ou
 
     # 加载生成器模型
     generator = Generator().to(device)
-    generator.load_state_dict(torch.load(model_path), strict=False)
+    generator.load_state_dict(torch.load(model_path, weights_only=True), strict=False)
     generator.eval()
 
     if not os.path.exists(output_folder):
@@ -104,6 +104,7 @@ def test_model(model_path, input_image_path="data/train/test", output_folder="ou
     if input_image_path != "":
         # 如何 input_image_path 是文件路径，则直接处理该文件
         if os.path.isfile(input_image_path):
+            output_image_path = f"{os.path.splitext(os.path.basename(input_image_path))[0]}_gen{get_generator_epoch_number(model_path)}{os.path.splitext(input_image_path)[1]}"
             process_image(input_image_path, output_image_path)
         elif os.path.isdir(input_image_path):
             model_gen = get_generator_epoch_number(model_path)

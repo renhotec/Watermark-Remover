@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 from scripts.test import test_model
 import keyboard  # Add this import at the top of the file
+import matplotlib.pyplot as plt
 
 
 class PerceptualLoss(nn.Module):
@@ -48,70 +49,6 @@ class BlackRegionLoss(nn.Module):
     def forward(self, generated, target):
         mask = (target < self.threshold).float()
         return F.l1_loss(generated * mask, target * mask)
-    
-# # 高光保持損失
-# class SpecularReflectionLoss(nn.Module):
-#     def __init__(self, threshold=0.9):
-#         super(SpecularReflectionLoss, self).__init__()
-#         self.threshold = threshold
-
-#     def forward(self, generated, target):
-#         # 高光区域的遮罩
-#         target_brightness = target.mean(dim=1, keepdim=True)  # 计算目标亮度
-#         specular_mask = (target_brightness > self.threshold).float()
-#         return F.l1_loss(generated * specular_mask, target * specular_mask)
-
-# # 局部對比度增強損失
-# class LocalContrastLoss(nn.Module):
-#     def __init__(self):
-#         super(LocalContrastLoss, self).__init__()
-#         kernel = torch.tensor([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-#         self.kernel = kernel.repeat(3, 1, 1, 1)
-#         self.kernel = self.kernel.cuda() if torch.cuda.is_available() else self.kernel
-
-#     def forward(self, generated, target):
-#         # 计算局部对比度
-#         contrast_generated = F.conv2d(generated, self.kernel, padding=1, groups=3)
-#         contrast_target = F.conv2d(target, self.kernel, padding=1, groups=3)
-#         return F.l1_loss(contrast_generated, contrast_target)
-
-# # 金属光泽保持损失 (Metallic Gloss Loss)
-# class MetallicGlossLoss(nn.Module):
-#     def __init__(self):
-#         super(MetallicGlossLoss, self).__init__()
-
-#     def forward(self, generated, target):
-#         # 将图像从 RGB 转换到 HSV
-#         generated_hsv = rgb_to_hsv(generated)
-#         target_hsv = rgb_to_hsv(target)
-
-#         # 只计算饱和度 (S) 和亮度 (V) 的损失
-#         loss_s = F.l1_loss(generated_hsv[:, 1, :, :], target_hsv[:, 1, :, :])  # 饱和度损失
-#         loss_v = F.l1_loss(generated_hsv[:, 2, :, :], target_hsv[:, 2, :, :])  # 亮度损失
-#         return loss_s + loss_v
-
-# def rgb_to_hsv(image):
-#     # 假设输入的 image 是 [B, C, H, W] 格式的张量
-#     r, g, b = image[:, 0, :, :], image[:, 1, :, :], image[:, 2, :, :]
-#     max_rgb, _ = torch.max(image, dim=1)
-#     min_rgb, _ = torch.min(image, dim=1)
-#     delta = max_rgb - min_rgb + 1e-6
-
-#     # 计算 H, S, V
-#     h = torch.zeros_like(max_rgb)
-#     s = delta / (max_rgb + 1e-6)
-#     v = max_rgb
-
-#     h = torch.where(max_rgb == r, 60 * ((g - b) / delta % 6), h)
-#     h = torch.where(max_rgb == g, 60 * ((b - r) / delta + 2), h)
-#     h = torch.where(max_rgb == b, 60 * ((r - g) / delta + 4), h)
-#     h /= 360  # 归一化到 [0, 1]
-#     h = h.unsqueeze(1)
-#     s = s.unsqueeze(1)
-#     v = v.unsqueeze(1)
-
-#     return torch.cat([h, s, v], dim=1)
-
 
 class EdgePreservingLoss(nn.Module):
     def __init__(self):
@@ -193,6 +130,8 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
 
     keyboard.add_hotkey('ctrl+alt+shift+p', toggle_pause)
     keyboard.add_hotkey('ctrl+alt+shift+o', toggle_pause)
+    
+    losses = []
 
     for epoch in range(epochs):
         epoch_start_time = time.time()
@@ -264,11 +203,24 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
         epoch_duration = time.time() - epoch_start_time
         print(f"Epoch [{epoch + 1}/{epochs}] | D Loss: {d_loss.item():.4f} | G Loss: {g_loss.item():.4f} | Time: {epoch_duration:.2f}s")
 
+        losses.append(g_loss.item())
+
         if (epoch + 1) % 10 == 0:
             torch.save(generator.state_dict(), f"models/generator_epoch_{epoch + 1}.pth")
-            # 调用模型测试 data/train/test目录下的所有圖片来测试处理效果，将处理后的图片保存到 data/train/outputs 目录下, 每個圖片的名字都是原始圖片+ _ + epoch + 1 + .jpg
-            # test_model(model_path=f"models/generator_epoch_{epoch + 1}.pth", input_image_path="test.jpg", output_image_path=f"test_{epoch + 1}.jpg")
             test_model(model_path=f"models/generator_epoch_{epoch + 1}.pth", input_image_path="data/train/test/", output_folder="data/train/outputs/")
+            with open("losses.txt", "w") as f:
+                for loss in losses:
+                    f.write(f"{loss}\n")
 
     total_duration = time.time() - total_start_time
     print(f"Training completed in {total_duration:.2f}s.")
+
+    with open("losses.txt", "r") as f:
+        losses = [float(line.strip()) for line in f]
+
+    plt.plot(losses)
+    plt.xlabel("Epoch")
+    plt.ylabel("Generator Loss")
+    plt.title("Generator Loss Over Epochs")
+    plt.grid()
+    plt.show()
