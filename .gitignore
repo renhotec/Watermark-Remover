@@ -6,3 +6,5 @@ data/*
 !data/
 outputs/
 script/__pycache__/
+
+losses.txt

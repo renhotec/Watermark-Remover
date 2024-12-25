@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Display</title>
+    <style>
+        .images {
+            display: flex;
+        }
+        .images div {
+            padding: 10px;
+        }
+        .images img {
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+            border: solid 1px lightgray;
+        }
+        .history {
+            margin-top: 20px;
+        }
+        .history h2 {
+            margin-bottom: 10px;
+        }
+        .history-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>LCSC水印去除模型</h1>
+    <form method="GET" action="">
+        <label for="original_image_url">图片链接:</label>
+        <input type="text" id="image_url" name="image_url" required>
+        <button type="submit">提交</button>
+    </form>
+    {% if original_image_url %}
+    <p>处理耗时: {{ processing_time }} 秒</p>
+    <div class="images">
+        <div>
+            <h2>原图</h2>
+            <img src="{{ original_image_url }}" alt="Original Image">
+        </div>
+        <div>
+            <h2>处理后</h2>
+            <img src="{{ processed_image_url }}" alt="Processed Image">
+        </div>
+    </div>
+    <script>
+        // 保存处理历史到 localStorage
+        const history = JSON.parse(localStorage.getItem('history')) || [];
+        const exists = history.some(item => item.original === "{{ original_image_url }}");
+        if (!exists) {
+            history.push({
+                original: "{{ original_image_url }}",
+                processed: "{{ processed_image_url }}",
+                time: "{{ processing_time }}"
+            });
+            localStorage.setItem('history', JSON.stringify(history));
+        }
+    </script>
+    {% endif %}
+
+    <div class="history">
+        <h2>处理历史</h2>
+        <button onclick="clearHistory()">清理历史记录</button>
+        <div id="history-list"></div>
+    </div>
+
+    <script>
+        // 从 localStorage 获取处理历史并显示
+        const historyList = document.getElementById('history-list');
+        const historyData = JSON.parse(localStorage.getItem('history')) || [];
+        historyData.forEach(item => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <p>处理耗时: ${item.time} 秒</p>
+                <div class="images">
+                    <div>
+                        <h2>原图</h2>
+                        <img src="${item.original}" alt="Original Image">
+                    </div>
+                    <div>
+                        <h2>处理后</h2>
+                        <img src="${item.processed}" alt="Processed Image">
+                    </div>
+                </div>
+                <hr>
+            `;
+            historyList.appendChild(historyItem);
+        });
+
+        // 清理历史记录
+        function clearHistory() {
+            localStorage.removeItem('history');
+            historyList.innerHTML = '';
+        }
+    </script>
+</body>
+
+</html>

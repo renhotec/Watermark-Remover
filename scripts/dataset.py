@@ -8,6 +8,7 @@ class WatermarkDataset(Dataset):
         self.watermarked_dir = os.path.join(root_dir, watermarked)
         self.clean_dir = os.path.join(root_dir, clean)
         self.watermarked_images = os.listdir(self.watermarked_dir)
+        self.watermarked_images = [f for f in self.watermarked_images if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
         self.transform = transforms.Compose([
             transforms.Resize((256, 256)),
             transforms.ToTensor(),
@@ -23,10 +24,13 @@ class WatermarkDataset(Dataset):
 
         clean_filename = os.path.splitext(watermarked_filename)[0]
         clean_path_jpg = os.path.join(self.clean_dir, clean_filename + ".jpg")
+        clean_path_jpeg = os.path.join(self.clean_dir, clean_filename + ".jpeg")
         clean_path_png = os.path.join(self.clean_dir, clean_filename + ".png")
 
         if os.path.exists(clean_path_jpg):
             clean_path = clean_path_jpg
+        elif os.path.exists(clean_path_jpeg):
+            clean_path = clean_path_jpeg
         elif os.path.exists(clean_path_png):
             clean_path = clean_path_png
         else:

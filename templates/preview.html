@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Previews</title>
+</head>
+<body>
+    <h1>Image Previews</h1>
+    {% for preview in previews %}
+        <div>
+            <img src="{{ preview }}" alt="Image Preview" style="max-width: 100%; height: auto;">
+        </div>
+    {% endfor %}
+</body>
+</html>

@@ -30,7 +30,7 @@ def pad_to_block_size(image, block_size=16):
 
 def test_model(model_path, input_image_path="data/train/test", output_folder="outputs"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    print(f"Model: {model_path}, Input: {input_image_path}, Output: {output_folder}, Device: {device}")
 
     # 加载生成器模型
     generator = Generator().to(device)

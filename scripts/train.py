@@ -14,6 +14,7 @@ import numpy as np
 from scripts.test import test_model
 import keyboard  # Add this import at the top of the file
 import matplotlib.pyplot as plt
+import sys
 
 
 class PerceptualLoss(nn.Module):
@@ -89,7 +90,11 @@ class ColorConsistencyLoss(nn.Module):
     def forward(self, generated, target):
         return F.l1_loss(generated.mean(dim=(2, 3)), target.mean(dim=(2, 3)))
 
-learning_rate = 1e-4
+learning_rate = 1e-5
+
+def light_area_loss(generated, target, threshold=0.8):
+    mask = (target.mean(dim=1, keepdim=True) > threshold).float()
+    return F.l1_loss(generated * mask, target * mask)
 
 def train_model(epochs=100, dir="", pretrained_pth=""):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -119,6 +124,7 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
     total_start_time = time.time()
 
     paused = False
+    stop_training = False
 
     def toggle_pause():
         nonlocal paused
@@ -128,18 +134,29 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
         else:
             print("Training resumed.")
 
+    def stop_training_fn():
+        nonlocal stop_training
+        stop_training = True
+        print("Training stopped. Exiting the loop.")
+
     keyboard.add_hotkey('ctrl+alt+shift+p', toggle_pause)
     keyboard.add_hotkey('ctrl+alt+shift+o', toggle_pause)
-    
+    keyboard.add_hotkey('ctrl+alt+shift+x', stop_training_fn)
+        
     losses = []
 
+    best_performance = 100
     for epoch in range(epochs):
+        if stop_training:
+            break
         epoch_start_time = time.time()
 
         while paused:
             time.sleep(1)
 
         for batch_idx, (watermarked_images, clean_images) in enumerate(dataloader):
+            if stop_training:
+                break
             while paused:
                 time.sleep(1)
 
@@ -175,25 +192,17 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
 
                 color_artifact_loss_fn = ColorArtifactLoss().to(device)
 
-
                 # 综合损失函数
                 g_loss = (
                     g_gan_loss +
-                    5 * g_l1_loss +
+                    2 * g_l1_loss +
                     1 * g_perceptual_loss +
-                    2 * g_edge_loss +
-                    0.5 * g_laplacian_loss +
-                    5 * g_color_loss +
-                    2 * color_artifact_loss_fn(fake_clean_images, clean_images) 
+                    3 * g_edge_loss +
+                    1 * g_laplacian_loss +
+                    1 * g_color_loss +
+                    1 * color_artifact_loss_fn(fake_clean_images, clean_images) 
                 )
-                # g_loss = (
-                #     g_gan_loss +
-                #     9 * g_l1_loss +
-                #     1 * g_perceptual_loss +
-                #     3 * g_edge_loss +
-                #     1 * g_laplacian_loss +
-                #     1 * g_color_loss
-                # )
+                g_loss += 2 * light_area_loss(fake_clean_images, clean_images)
 
             scaler.scale(g_loss).backward()
             torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=1.0)
@@ -204,6 +213,10 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
         print(f"Epoch [{epoch + 1}/{epochs}] | D Loss: {d_loss.item():.4f} | G Loss: {g_loss.item():.4f} | Time: {epoch_duration:.2f}s")
 
         losses.append(g_loss.item())
+
+        if g_loss.item() < best_performance:
+            best_performance = g_loss.item()
+            torch.save(generator.state_dict(), f"models/generator_epoch_best_{epoch + 1}.pth")
 
         if (epoch + 1) % 10 == 0:
             torch.save(generator.state_dict(), f"models/generator_epoch_{epoch + 1}.pth")
