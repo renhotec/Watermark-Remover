@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory="templates")
 # 加载模型
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 generator = EnhancedGenerator().to(device)
-generator.load_state_dict(torch.load("models\generator_epoch_100.pth", map_location=device))
+generator.load_state_dict(torch.load("models/generator_epoch_40.pth", map_location=device))
 generator.eval()
 
 # 图像转换函数
@@ -38,6 +38,9 @@ class ImageURLRequest(BaseModel):
 
 class ImageBase64Request(BaseModel):
     images: List[str]  # 接收 Base64 图片列表
+
+class ImagePreviewResponse(BaseModel):
+    result: List[str]  # 返回 Base64 图片预览链接
 
 # 图片处理函数
 def process_image(image: Image.Image) -> str:
@@ -110,6 +113,36 @@ def process_base64(image_base64: str) -> str:
         return f'<img src="data:image/jpeg;base64,{processed_image_base64}" style="max-width: 500px; max-height: 500px;"/><hr>'
     except Exception as e:
         return f"<p>处理图片失败，错误信息: {str(e)}</p><hr>"
+    
+
+@app.post("/process-images", response_model=ImagePreviewResponse)
+async def process_images(request: ImageURLRequest):
+    previews = []
+
+    for url in request.urls:
+        try:
+            response = requests.get(url, headers=headers, cookies=cookies)
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"无法访问图片链接: {url}，HTTP 状态码: {response.status_code}, 响应内容: {response.text}",
+                )
+            image = Image.open(BytesIO(response.content)).convert("RGB")
+            base64_image = process_image(image)
+            # 生成预览链接
+            preview = f"data:image/jpeg;base64,{base64_image}"
+            previews.append(preview)
+        except requests.exceptions.RequestException as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"处理图片链接失败: {url}, 错误信息: {str(e)}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"未知错误，无法处理图片链接: {url}, 错误信息: {str(e)}"
+            )
+    return ImagePreviewResponse(result=previews)
 
 # 通过图片链接处理并提供预览（并行）
 @app.post("/process-image-url-preview/", response_class=HTMLResponse)
@@ -126,26 +159,6 @@ async def process_image_url_preview(request: ImageURLRequest):
     # 使用线程池并行处理图片链接
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(lambda url: process_url(url, headers), request.urls))
-
-    elapsed_time = time.time() - start_time  # 计算耗时
-    return f"""
-    <html>
-    <body>
-        <h1>图片处理结果</h1>
-        {''.join(results)}
-        <h3>处理完成，共耗时: {elapsed_time:.2f} 秒</h3>
-    </body>
-    </html>
-    """
-
-# 通过 Base64 编码处理并提供预览（并行）
-@app.post("/process-image-base64-preview/", response_class=HTMLResponse)
-async def process_image_base64_preview(request: ImageBase64Request):
-    start_time = time.time()  # 开始计时
-
-    # 使用线程池并行处理 Base64 图片
-    with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_base64, request.images))
 
     elapsed_time = time.time() - start_time  # 计算耗时
     return f"""

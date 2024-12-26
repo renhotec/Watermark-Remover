@@ -96,6 +96,11 @@ def light_area_loss(generated, target, threshold=0.8):
     mask = (target.mean(dim=1, keepdim=True) > threshold).float()
     return F.l1_loss(generated * mask, target * mask)
 
+def color_masked_loss(generated, target, mask_color):
+    # 生成一个针对目标颜色区域的掩码
+    mask = (target.mean(dim=1, keepdim=True) - mask_color).abs() < 0.2
+    return F.l1_loss(generated * mask.float(), target * mask.float())
+
 def train_model(epochs=100, dir="", pretrained_pth=""):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -197,12 +202,14 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
                     g_gan_loss +
                     2 * g_l1_loss +
                     1 * g_perceptual_loss +
-                    3 * g_edge_loss +
-                    1 * g_laplacian_loss +
-                    1 * g_color_loss +
+                    2 * g_edge_loss +
+                    0.5 * g_laplacian_loss +
+                    2 * g_color_loss +
                     1 * color_artifact_loss_fn(fake_clean_images, clean_images) 
                 )
                 g_loss += 2 * light_area_loss(fake_clean_images, clean_images)
+                yellow_mask = 0.8  # 针对黄色主体（颜色值范围调整）
+                g_loss += 1 * color_masked_loss(fake_clean_images, clean_images, yellow_mask)
 
             scaler.scale(g_loss).backward()
             torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=1.0)

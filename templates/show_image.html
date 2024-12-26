@@ -8,24 +8,48 @@
     <style>
         .images {
             display: flex;
+            align-items: center;
         }
+
         .images div {
             padding: 10px;
         }
+
         .images img {
             max-height: 70vh;
             width: auto;
             height: auto;
             border: solid 1px lightgray;
         }
+
         .history {
             margin-top: 20px;
         }
+
         .history h2 {
             margin-bottom: 10px;
         }
+
         .history-item {
             margin-bottom: 10px;
+        }
+
+        .breathing-gradient {
+            animation: breathing 0.6s infinite;
+        }
+
+        @keyframes breathing {
+            0% {
+                opacity: 0.2;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
         }
     </style>
 </head>
@@ -62,6 +86,8 @@
             localStorage.setItem('history', JSON.stringify(history));
         }
     </script>
+    {% else %}
+    <p>No image URL provided.</p>
     {% endif %}
 
     <div class="history">
@@ -72,33 +98,84 @@
 
     <script>
         // 从 localStorage 获取处理历史并显示
-        const historyList = document.getElementById('history-list');
-        const historyData = JSON.parse(localStorage.getItem('history')) || [];
-        historyData.forEach(item => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.innerHTML = `
+        function displayHistory() {
+            // 从 localStorage 获取处理历史并显示
+            const historyList = document.getElementById('history-list');
+            const historyData = JSON.parse(localStorage.getItem('history')) || [];
+            historyData.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
                 <p>处理耗时: ${item.time} 秒</p>
                 <div class="images">
                     <div>
                         <h2>原图</h2>
                         <img src="${item.original}" alt="Original Image">
                     </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="reprocessImage('${item.original}', ${index})" style="height: fit-content;">重新处理</button>
+                        <button onclick="deleteHistoryItem(${index})" style="height: fit-content;">删除记录</button>
+                    </div>
                     <div>
                         <h2>处理后</h2>
-                        <img src="${item.processed}" alt="Processed Image">
+                        <img id="processed-image-${index}" src="${item.processed}" alt="Processed Image">
+                        <div id="spinner-${index}" style="display: none;">Loading...</div>
                     </div>
                 </div>
                 <hr>
             `;
-            historyList.appendChild(historyItem);
-        });
-
+                historyList.appendChild(historyItem);
+            });
+        }
         // 清理历史记录
         function clearHistory() {
             localStorage.removeItem('history');
             historyList.innerHTML = '';
+            displayHistory();
         }
+
+        // 删除单行记录
+        function deleteHistoryItem(index) {
+            const history = JSON.parse(localStorage.getItem('history')) || [];
+            history.splice(index, 1);
+            localStorage.setItem('history', JSON.stringify(history));
+            // 隐藏被删除的记录
+            const historyItem = document.querySelector(`.history-item:nth-child(${index + 1})`);
+            historyItem.style.display = 'none';
+        }
+
+        // 重新处理图片
+        function reprocessImage(originalUrl, index) {
+            const image = document.getElementById(`processed-image-${index}`);
+            image.classList.add('breathing-gradient'); // Add the breathing gradient effect
+            const button = document.querySelector(`.history-item:nth-child(${index + 1}) button`);
+            button.disabled = true;
+            button.innerText = '正在处理';
+
+            fetch('/process-images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ urls: [originalUrl] })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    image.src = data.result[0];
+                    // 更新 localStorage
+                    const history = JSON.parse(localStorage.getItem('history')) || [];
+                    history[index].processed = data.result[0];
+                    localStorage.setItem('history', JSON.stringify(history));
+                })
+                .catch(error => console.error('Error:', error))
+                .finally(() => {
+                    image.classList.remove('breathing-gradient'); // Remove the breathing gradient effect
+                    button.disabled = false;
+                    button.innerText = '重新处理';
+                });
+        }
+
+        displayHistory();
     </script>
 </body>
 
