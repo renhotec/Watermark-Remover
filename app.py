@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory="templates")
 # 加载模型
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 generator = EnhancedGenerator().to(device)
-generator.load_state_dict(torch.load("models/generator_epoch_40.pth", map_location=device))
+generator.load_state_dict(torch.load("models/generator_epoch_28.pth", map_location=device))
 generator.eval()
 
 # 图像转换函数
@@ -38,6 +38,16 @@ class ImageURLRequest(BaseModel):
 
 class ImageBase64Request(BaseModel):
     images: List[str]  # 接收 Base64 图片列表
+
+class ImageFilesRequest(BaseModel):
+    files: List[UploadFile]  # 接收图片文件列表
+
+class ImageFileResponse(BaseModel):
+    name: str  # 图片文件名
+    value: str  # Base64 图片内容
+
+class ImagesResponse(BaseModel):
+    result: List[ImageFileResponse]  # 返回 Base64 图片内容
 
 class ImagePreviewResponse(BaseModel):
     result: List[str]  # 返回 Base64 图片预览链接
@@ -144,32 +154,22 @@ async def process_images(request: ImageURLRequest):
             )
     return ImagePreviewResponse(result=previews)
 
-# 通过图片链接处理并提供预览（并行）
-@app.post("/process-image-url-preview/", response_class=HTMLResponse)
-async def process_image_url_preview(request: ImageURLRequest):
-    start_time = time.time()  # 开始计时
+@app.post("/process-image-files", response_model=ImagesResponse)
+async def process_image_files(files: List[UploadFile] = File(...)):
+    previews = []
 
-    # 自定义 Headers
-    headers = {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "accept-language": "zh-CN,zh;q=0.9",
-    }
+    def process_file(file: UploadFile):
+        try:
+            image = Image.open(BytesIO(file.file.read())).convert("RGB")
+            base64_image = process_image(image)
+            return ImageFileResponse(name=file.filename, value=base64_image)
+        except Exception as e:
+            return ImageFileResponse(name=file.filename, value=f"处理图片失败: {str(e)}")
 
-    # 使用线程池并行处理图片链接
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(lambda url: process_url(url, headers), request.urls))
+        results = list(executor.map(process_file, files))
 
-    elapsed_time = time.time() - start_time  # 计算耗时
-    return f"""
-    <html>
-    <body>
-        <h1>图片处理结果</h1>
-        {''.join(results)}
-        <h3>处理完成，共耗时: {elapsed_time:.2f} 秒</h3>
-    </body>
-    </html>
-    """
+    return ImagesResponse(result=results)
 
 # 根路径路由
 @app.get("/")

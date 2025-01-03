@@ -5,14 +5,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.models import vgg19
-# from torch.cuda.amp import autocast, GradScaler
 from torch.amp import autocast, GradScaler
 from scripts.dataset import WatermarkDataset
 from scripts.model import EnhancedGenerator, Discriminator
 import cv2
 import numpy as np
 from scripts.test import test_model
-import keyboard  # Add this import at the top of the file
+import keyboard
 import matplotlib.pyplot as plt
 import sys
 
@@ -90,7 +89,19 @@ class ColorConsistencyLoss(nn.Module):
     def forward(self, generated, target):
         return F.l1_loss(generated.mean(dim=(2, 3)), target.mean(dim=(2, 3)))
 
-learning_rate = 1e-5
+class FrequencyLoss(nn.Module):
+    def __init__(self):
+        super(FrequencyLoss, self).__init__()
+
+    def forward(self, generated, target):
+        gen_fft = torch.fft.rfft2(generated, norm="ortho")
+        tgt_fft = torch.fft.rfft2(target, norm="ortho")
+        # 只关注高频区域
+        gen_high = torch.abs(gen_fft[:, :, -10:, -10:])
+        tgt_high = torch.abs(tgt_fft[:, :, -10:, -10:])
+        return F.l1_loss(gen_high, tgt_high)
+
+learning_rate = 1e-4
 
 def light_area_loss(generated, target, threshold=0.8):
     mask = (target.mean(dim=1, keepdim=True) > threshold).float()
@@ -101,13 +112,35 @@ def color_masked_loss(generated, target, mask_color):
     mask = (target.mean(dim=1, keepdim=True) - mask_color).abs() < 0.2
     return F.l1_loss(generated * mask.float(), target * mask.float())
 
+def color_contrast_loss(generated, target, target_color):
+    # 创建针对目标颜色的掩码
+    mask = torch.abs(target.mean(dim=1, keepdim=True) - target_color) < 0.2
+    return F.l1_loss(generated * mask.float(), target * mask.float())
+
+# 增强红色信道的学习
+def red_channel_loss(generated, target):
+    # 提取红色通道
+    gen_red = generated[:, 0, :, :]  # 生成图像的红色通道
+    tgt_red = target[:, 0, :, :]    # 目标图像的红色通道
+    # 计算红色通道的 L1 损失
+    return F.l1_loss(gen_red, tgt_red)
+
+# 增加尺度感知损失函数
+def scale_aware_loss(generated, target):
+    # 计算图像梯度来检测边缘
+    generated_grad = torch.abs(generated[:, :, 1:, :] - generated[:, :, :-1, :])[:, :, :, :-1] + \
+                    torch.abs(generated[:, :, :, 1:] - generated[:, :, :, :-1])[:, :, :-1, :]
+    target_grad = torch.abs(target[:, :, 1:, :] - target[:, :, :-1, :])[:, :, :, :-1] + \
+                  torch.abs(target[:, :, :, 1:] - target[:, :, :, :-1])[:, :, :-1, :]
+    return F.l1_loss(generated_grad, target_grad)
+
 def train_model(epochs=100, dir="", pretrained_pth=""):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     if dir == "":
         dir = "images"
     dataset = WatermarkDataset(root_dir="data/train", clean=dir, watermarked=dir + "-watermarked")
-    dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
     generator = EnhancedGenerator().to(device)
     if pretrained_pth != "":
@@ -115,59 +148,36 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
         print(f"Loaded pretrained model from {pretrained_pth}")
     discriminator = Discriminator().to(device)
 
-    g_optimizer = optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
-    d_optimizer = optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    # 优化器与学习率调度器
+    g_optimizer = optim.Adam(generator.parameters(), lr=1e-4, betas=(0.5, 0.999), weight_decay=1e-5)
+    d_optimizer = optim.Adam(discriminator.parameters(), lr=1e-4, betas=(0.5, 0.999), weight_decay=1e-5)
+    g_scheduler = optim.lr_scheduler.ReduceLROnPlateau(g_optimizer, mode="min", factor=0.5, patience=5, verbose=True)
+    d_scheduler = optim.lr_scheduler.ReduceLROnPlateau(d_optimizer, mode="min", factor=0.5, patience=5, verbose=True)
 
+    # 损失函数
     criterion_gan = nn.BCEWithLogitsLoss().to(device)
     criterion_l1 = nn.L1Loss().to(device)
     perceptual_loss = PerceptualLoss().to(device)
     edge_loss_fn = EdgePreservingLoss().to(device)
     laplacian_loss_fn = LaplacianLoss().to(device)
     color_loss_fn = ColorConsistencyLoss().to(device)
+    frequency_loss_fn = FrequencyLoss().to(device)
+    color_artifact_loss_fn = ColorArtifactLoss().to(device)
 
-    scaler = GradScaler(device=device.type)
+    scaler = GradScaler()
     total_start_time = time.time()
 
-    paused = False
-    stop_training = False
-
-    def toggle_pause():
-        nonlocal paused
-        paused = not paused
-        if paused:
-            print("Training paused. Press 'ctrl+alt+shift+o' to continue.")
-        else:
-            print("Training resumed.")
-
-    def stop_training_fn():
-        nonlocal stop_training
-        stop_training = True
-        print("Training stopped. Exiting the loop.")
-
-    keyboard.add_hotkey('ctrl+alt+shift+p', toggle_pause)
-    keyboard.add_hotkey('ctrl+alt+shift+o', toggle_pause)
-    keyboard.add_hotkey('ctrl+alt+shift+x', stop_training_fn)
-        
     losses = []
+    best_performance = float("inf")
+    epoch = 0
 
-    best_performance = 100
-    for epoch in range(epochs):
-        if stop_training:
-            break
+    while epoch < epochs:
         epoch_start_time = time.time()
 
-        while paused:
-            time.sleep(1)
-
         for batch_idx, (watermarked_images, clean_images) in enumerate(dataloader):
-            if stop_training:
-                break
-            while paused:
-                time.sleep(1)
-
             watermarked_images, clean_images = watermarked_images.to(device), clean_images.to(device)
 
-            # 训练判别器
+            # Train Discriminator
             d_optimizer.zero_grad()
             with autocast(device_type=device.type):
                 real_outputs = discriminator(watermarked_images, clean_images)
@@ -182,7 +192,7 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
             scaler.step(d_optimizer)
             scaler.update()
 
-            # 训练生成器
+            # Train Generator
             g_optimizer.zero_grad()
             with autocast(device_type=device.type):
                 fake_clean_images = generator(watermarked_images)
@@ -194,25 +204,35 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
                 g_edge_loss = edge_loss_fn(fake_clean_images, clean_images)
                 g_laplacian_loss = laplacian_loss_fn(fake_clean_images, clean_images)
                 g_color_loss = color_loss_fn(fake_clean_images, clean_images)
+                g_frequency_loss = frequency_loss_fn(fake_clean_images, clean_images)
+                g_color_artifact_loss = color_artifact_loss_fn(fake_clean_images, clean_images)
 
-                color_artifact_loss_fn = ColorArtifactLoss().to(device)
+                red_loss = red_channel_loss(fake_clean_images, clean_images)
+                contrast_loss_red = color_contrast_loss(fake_clean_images, clean_images, target_color=0.8)  # 针对红色
 
-                # 综合损失函数
+                # 动态权重调整
+                if epoch > 50:
+                    color_loss_weight = 10
+                    gan_loss_weight = 0.2
+                else:
+                    color_loss_weight = 6
+                    gan_loss_weight = 0.5
+
                 g_loss = (
-                    g_gan_loss +
-                    2 * g_l1_loss +
-                    1 * g_perceptual_loss +
-                    2 * g_edge_loss +
-                    0.5 * g_laplacian_loss +
-                    2 * g_color_loss +
-                    1 * color_artifact_loss_fn(fake_clean_images, clean_images) 
+                    gan_loss_weight * g_gan_loss +
+                    5 * g_l1_loss +
+                    4 * g_perceptual_loss +
+                    3 * g_edge_loss +
+                    2 * g_laplacian_loss +  # 加入拉普拉斯损失，优化边缘锐利度
+                    5 * g_frequency_loss +
+                    color_loss_weight * g_color_loss +
+                    3 * g_color_artifact_loss +
+                    2 * red_loss +                   # 红色通道的损失
+                    2 * contrast_loss_red            # 红色区域对比损失
                 )
-                g_loss += 2 * light_area_loss(fake_clean_images, clean_images)
-                yellow_mask = 0.8  # 针对黄色主体（颜色值范围调整）
-                g_loss += 1 * color_masked_loss(fake_clean_images, clean_images, yellow_mask)
 
             scaler.scale(g_loss).backward()
-            torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=5)
             scaler.step(g_optimizer)
             scaler.update()
 
@@ -225,18 +245,32 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
             best_performance = g_loss.item()
             torch.save(generator.state_dict(), f"models/generator_epoch_best_{epoch + 1}.pth")
 
-        if (epoch + 1) % 10 == 0:
+        if epoch_duration > 0:
+            output_step = max(1, int(180 / epoch_duration))
+
+        if (epoch + 1) % output_step == 0:
             torch.save(generator.state_dict(), f"models/generator_epoch_{epoch + 1}.pth")
             test_model(model_path=f"models/generator_epoch_{epoch + 1}.pth", input_image_path="data/train/test/", output_folder="data/train/outputs/")
             with open("losses.txt", "w") as f:
                 for loss in losses:
                     f.write(f"{loss}\n")
 
+        # 询问是否需要增加训练代数
+        if epoch == epochs - 1:
+            plt.plot(losses)
+            plt.ylabel("Generator Loss")
+            plt.title("Generator Loss Over Epochs")
+            plt.grid()
+            plt.show()
+            additional_epochs = input("Do you want to add more epochs? If yes, please enter the number of additional epochs (or press Enter to finish): ")
+            if additional_epochs.isdigit():
+                epochs += int(additional_epochs)
+                print(f"Training will continue for {additional_epochs} more epochs.")
+
+        epoch += 1
+
     total_duration = time.time() - total_start_time
     print(f"Training completed in {total_duration:.2f}s.")
-
-    with open("losses.txt", "r") as f:
-        losses = [float(line.strip()) for line in f]
 
     plt.plot(losses)
     plt.xlabel("Epoch")
