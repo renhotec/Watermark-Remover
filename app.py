@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory="templates")
 # 加载模型
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 generator = EnhancedGenerator().to(device)
-generator.load_state_dict(torch.load("models/generator_epoch_28.pth", map_location=device))
+generator.load_state_dict(torch.load("models/generator_epoch_92.pth", map_location=device))
 generator.eval()
 
 # 图像转换函数

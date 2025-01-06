@@ -96,8 +96,8 @@ class ImageOperator:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python dataset_operator.py <directory> <watermark file> [width]")
+    if len(sys.argv) < 2:
+        print("Usage: python dataset_operator.py <directory> [width] [watermark file]")
         sys.exit(1)
 
     directory = sys.argv[1]
@@ -107,15 +107,8 @@ if __name__ == "__main__":
         print(f"The path {directory} is not a valid directory.")
         sys.exit(1)
 
-    watermark_file = sys.argv[2]
-    watermark_file = watermark_file.replace(".\\", "")
-
-    if not os.path.isfile(watermark_file):
-        print(f"The file {watermark_file} does not exist.")
-        sys.exit(1)
-
-    if len(sys.argv) > 3:
-        width = int(sys.argv[3])
+    if len(sys.argv) > 2:
+        width = int(sys.argv[2])
     else:
         width = 900
 
@@ -123,5 +116,13 @@ if __name__ == "__main__":
     image_operator = ImageOperator(size)
     image_operator.resize_images_in_directory(directory)
 
-    operator = WatermarkOperator(watermark_file, directory)
-    operator.add_watermark()
+    if len(sys.argv) > 3:
+        watermark_file = sys.argv[3]
+        watermark_file = watermark_file.replace(".\\", "")
+
+        if not os.path.isfile(watermark_file):
+            print(f"The file {watermark_file} does not exist.")
+            sys.exit(1)
+
+        operator = WatermarkOperator(watermark_file, directory)
+        operator.add_watermark()

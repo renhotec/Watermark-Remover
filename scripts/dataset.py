@@ -11,7 +11,7 @@ class WatermarkDataset(Dataset):
         self.watermarked_images = [f for f in self.watermarked_images if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
         self.transform = transforms.Compose([
             transforms.Resize((256, 256)),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1), 
+            # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1), 
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])

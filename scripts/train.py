@@ -101,7 +101,7 @@ class FrequencyLoss(nn.Module):
         tgt_high = torch.abs(tgt_fft[:, :, -10:, -10:])
         return F.l1_loss(gen_high, tgt_high)
 
-learning_rate = 1e-4
+learning_rate = 1e-5
 
 def light_area_loss(generated, target, threshold=0.8):
     mask = (target.mean(dim=1, keepdim=True) > threshold).float()
@@ -137,32 +137,28 @@ def scale_aware_loss(generated, target):
 def train_model(epochs=100, dir="", pretrained_pth=""):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    if dir == "":
-        dir = "images"
+    
+    # 加载数据集
     dataset = WatermarkDataset(root_dir="data/train", clean=dir, watermarked=dir + "-watermarked")
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True) 
 
+    # 模型加载
     generator = EnhancedGenerator().to(device)
-    if pretrained_pth != "":
+    if pretrained_pth:
         generator.load_state_dict(torch.load(pretrained_pth), strict=False)
         print(f"Loaded pretrained model from {pretrained_pth}")
     discriminator = Discriminator().to(device)
 
-    # 优化器与学习率调度器
-    g_optimizer = optim.Adam(generator.parameters(), lr=1e-4, betas=(0.5, 0.999), weight_decay=1e-5)
-    d_optimizer = optim.Adam(discriminator.parameters(), lr=1e-4, betas=(0.5, 0.999), weight_decay=1e-5)
-    g_scheduler = optim.lr_scheduler.ReduceLROnPlateau(g_optimizer, mode="min", factor=0.5, patience=5, verbose=True)
-    d_scheduler = optim.lr_scheduler.ReduceLROnPlateau(d_optimizer, mode="min", factor=0.5, patience=5, verbose=True)
+    # 优化器
+    g_optimizer = optim.Adam(generator.parameters(), lr=1e-4, betas=(0.5, 0.999))
+    d_optimizer = optim.Adam(discriminator.parameters(), lr=1e-4, betas=(0.5, 0.999))
 
     # 损失函数
     criterion_gan = nn.BCEWithLogitsLoss().to(device)
     criterion_l1 = nn.L1Loss().to(device)
     perceptual_loss = PerceptualLoss().to(device)
-    edge_loss_fn = EdgePreservingLoss().to(device)
-    laplacian_loss_fn = LaplacianLoss().to(device)
     color_loss_fn = ColorConsistencyLoss().to(device)
-    frequency_loss_fn = FrequencyLoss().to(device)
-    color_artifact_loss_fn = ColorArtifactLoss().to(device)
+    edge_loss_fn = EdgePreservingLoss().to(device)
 
     scaler = GradScaler()
     total_start_time = time.time()
@@ -201,38 +197,43 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
                 g_gan_loss = criterion_gan(fake_outputs, torch.ones_like(fake_outputs, device=device))
                 g_l1_loss = criterion_l1(fake_clean_images, clean_images)
                 g_perceptual_loss = perceptual_loss(fake_clean_images, clean_images)
-                g_edge_loss = edge_loss_fn(fake_clean_images, clean_images)
-                g_laplacian_loss = laplacian_loss_fn(fake_clean_images, clean_images)
                 g_color_loss = color_loss_fn(fake_clean_images, clean_images)
-                g_frequency_loss = frequency_loss_fn(fake_clean_images, clean_images)
-                g_color_artifact_loss = color_artifact_loss_fn(fake_clean_images, clean_images)
+                g_edge_loss = edge_loss_fn(fake_clean_images, clean_images)
 
-                red_loss = red_channel_loss(fake_clean_images, clean_images)
-                contrast_loss_red = color_contrast_loss(fake_clean_images, clean_images, target_color=0.8)  # 针对红色
+                # 针对水印区域的颜色对比损失
+                def watermark_contrast_loss(generated, target, watermark_mask):
+                    return F.l1_loss(generated * watermark_mask, target * watermark_mask)
 
-                # 动态权重调整
-                if epoch > 50:
-                    color_loss_weight = 10
-                    gan_loss_weight = 0.2
-                else:
-                    color_loss_weight = 6
-                    gan_loss_weight = 0.5
+                # 针对蓝色水印区域生成掩码
+                def generate_watermark_mask(target_image, color_range=(0.4, 0.6)):
+                    mask = ((target_image.mean(dim=1, keepdim=True) > color_range[0]) & 
+                            (target_image.mean(dim=1, keepdim=True) < color_range[1])).float()
+                    return mask
 
+                watermark_mask = generate_watermark_mask(clean_images)
+                g_watermark_loss = watermark_contrast_loss(fake_clean_images, clean_images, watermark_mask)
+
+                # 背景一致性损失
+                def background_loss(generated, target, threshold=0.8):
+                    mask = (target.mean(dim=1, keepdim=True) > threshold).float()
+                    return F.l1_loss(generated * mask, target * mask)
+
+                g_background_loss = background_loss(fake_clean_images, clean_images)
+                 # 动态调整对抗损失的权重
+                gan_loss_weight = 2 if epoch < 50 else 1
+
+                # 最终生成器损失
                 g_loss = (
-                    gan_loss_weight * g_gan_loss +
-                    5 * g_l1_loss +
-                    4 * g_perceptual_loss +
-                    3 * g_edge_loss +
-                    2 * g_laplacian_loss +  # 加入拉普拉斯损失，优化边缘锐利度
-                    5 * g_frequency_loss +
-                    color_loss_weight * g_color_loss +
-                    3 * g_color_artifact_loss +
-                    2 * red_loss +                   # 红色通道的损失
-                    2 * contrast_loss_red            # 红色区域对比损失
+                    gan_loss_weight * g_gan_loss +    # 提高对抗损失权重
+                    5.0 * g_l1_loss +                
+                    4.0 * g_perceptual_loss +        
+                    6.0 * g_color_loss +             # 保持颜色一致性损失的权重
+                    3.0 * g_edge_loss  +
+                    1.0 * g_watermark_loss +             # 水印区域对比损失
+                    6.0 * g_background_loss              # 背景一致性损失          
                 )
 
             scaler.scale(g_loss).backward()
-            torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=5)
             scaler.step(g_optimizer)
             scaler.update()
 
@@ -246,7 +247,7 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
             torch.save(generator.state_dict(), f"models/generator_epoch_best_{epoch + 1}.pth")
 
         if epoch_duration > 0:
-            output_step = max(1, int(180 / epoch_duration))
+            output_step = max(1, int(360 / epoch_duration))
 
         if (epoch + 1) % output_step == 0:
             torch.save(generator.state_dict(), f"models/generator_epoch_{epoch + 1}.pth")
@@ -255,7 +256,7 @@ def train_model(epochs=100, dir="", pretrained_pth=""):
                 for loss in losses:
                     f.write(f"{loss}\n")
 
-        # 询问是否需要增加训练代数
+        # Ask if more epochs are needed
         if epoch == epochs - 1:
             plt.plot(losses)
             plt.ylabel("Generator Loss")
